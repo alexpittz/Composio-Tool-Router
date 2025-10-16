@@ -53,12 +53,9 @@ function updateStatusIndicator(status) {
 }
 
 function initializeTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        isDarkMode = true;
+    isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (isDarkMode) {
         document.documentElement.classList.add('dark');
-    } else {
-        isDarkMode = false;
     }
 }
 

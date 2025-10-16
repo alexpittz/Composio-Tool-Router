@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,29 +30,34 @@
     <div class="scan-lines"></div>
     <div class="floating-grid"></div>
     
-    <div class="light-beams">
-        <div class="beam beam-1"></div>
-        <div class="beam beam-2"></div>
-        <div class="beam beam-3"></div>
-        <div class="beam beam-4"></div>
-        <div class="beam beam-5"></div>
-        <div class="beam beam-6"></div>
+    <div class="radar-scanner radar-1"></div>
+    <div class="radar-scanner radar-2"></div>
+    <div class="radar-scanner radar-3"></div>
+    
+    <div class="floating-robots">
+        <div class="robot-icon robot-1">🤖</div>
+        <div class="robot-icon robot-2">🤖</div>
+        <div class="robot-icon robot-3">🤖</div>
+        <div class="robot-icon robot-4">🤖</div>
     </div>
     
-    <div class="noise-overlay"></div>
+    <div class="sparkle-container" id="sparkleContainer"></div>
+    
+    <div id="dataStreams"></div>
     
     <div class="glowing-orbs">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
         <div class="orb orb-3"></div>
         <div class="orb orb-4"></div>
-        <div class="orb orb-5"></div>
     </div>
 
     <header class="bg-white dark:bg-gray-800 shadow-md px-4 py-3 md:px-8 flex flex-col md:flex-row justify-between items-center sticky top-0 z-20 transition-colors duration-300">
         <div class="flex items-center mb-2 md:mb-0">
-            <i class="fas fa-route text-2xl text-primary mr-3"></i>
-            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Composio Tool Router</h1>
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-route text-2xl\' style=\'color: white;\'></i>'">
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 ml-3">Composio Tool Router</h1>
         </div>
 
         <nav class="flex space-x-4 text-sm md:text-base border-b border-gray-200 dark:border-gray-700 w-full md:w-auto md:border-b-0">
@@ -129,11 +133,6 @@
         <div class="banner-spotlight spotlight-2"></div>
         <div class="banner-spotlight spotlight-3"></div>
         
-        <div class="banner-particles" id="bannerParticles"></div>
-        
-        <div class="banner-robot robot-1">🤖</div>
-        <div class="banner-robot robot-2">🤖</div>
-        
         <div class="team-banner-content">
             <h2 class="team-banner-title">Meet Our Team</h2>
             <img src="team.jpg" alt="Our Team">
@@ -145,7 +144,7 @@
     <script>
         particlesJS('particles-js', {
             particles: {
-                number: { value: 100, density: { enable: true, value_area: 800 } },
+                number: { value: 120, density: { enable: true, value_area: 800 } },
                 color: { value: '#00d4ff' },
                 shape: { type: 'circle' },
                 opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1, opacity_min: 0.1 } },
@@ -161,24 +160,36 @@
             retina_detect: true
         });
 
-        function createBannerParticles() {
-            const container = document.getElementById('bannerParticles');
-            for (let i = 0; i < 50; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'banner-particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (4 + Math.random() * 4) + 's';
-                particle.style.setProperty('--drift', (Math.random() * 200 - 100) + 'px');
-                
-                const colors = ['#00d4ff', '#a855f7', '#ec4899', '#10b981'];
-                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-                
-                container.appendChild(particle);
+        function createSparkles() {
+            const container = document.getElementById('sparkleContainer');
+            for (let i = 0; i < 80; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.animationDelay = Math.random() * 8 + 's';
+                sparkle.style.animationDuration = (6 + Math.random() * 4) + 's';
+                sparkle.style.setProperty('--drift', (Math.random() * 200 - 100) + 'px');
+                const colors = ['#00d4ff', '#a855f7', '#ec4899', '#10b981', '#f59e0b'];
+                sparkle.style.color = colors[Math.floor(Math.random() * colors.length)];
+                container.appendChild(sparkle);
             }
         }
         
-        createBannerParticles();
+        function createDataStreams() {
+            const container = document.getElementById('dataStreams');
+            for (let i = 0; i < 15; i++) {
+                const stream = document.createElement('div');
+                stream.className = 'data-stream';
+                stream.style.left = Math.random() * 100 + '%';
+                stream.style.animationDelay = Math.random() * 4 + 's';
+                const colors = ['#00d4ff', '#a855f7', '#10b981', '#ec4899'];
+                stream.style.setProperty('--color', colors[Math.floor(Math.random() * colors.length)]);
+                container.appendChild(stream);
+            }
+        }
+        
+        createSparkles();
+        createDataStreams();
         
         document.getElementById('closeBanner').addEventListener('click', () => {
             document.getElementById('teamBanner').classList.add('hidden');

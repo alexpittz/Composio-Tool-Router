@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Composio Tool Router Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to enable dark mode based on the 'dark' class on the HTML element
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#3b82f6', // Blue-500
+                        'secondary': '#8b5cf6', // Violet-500
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        /* Apply transition to all colors for smooth theme switching */
+        * { transition: background-color 0.3s, color 0.3s, border-color 0.3s, transform 0.3s; }
+
+        /* Active state for navigation links */
+        .nav-link.active {
+            border-bottom: 2px solid #3b82f6; /* Blue-500 */
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        /* Dark mode active state */
+        .dark .nav-link.active {
+            border-bottom-color: #a78bfa; /* Violet-400 */
+            color: #a78bfa;
+        }
+
+        /* Style for the Toast notification container */
+        #toastContainer {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            transition: opacity 0.5s ease-in-out;
+            opacity: 1;
+            min-width: 250px;
+        }
+        .toast.hide {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+
+    <!-- Main Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-md px-4 py-3 md:px-8 flex flex-col md:flex-row justify-between items-center sticky top-0 z-20 transition-colors duration-300">
+        <div class="flex items-center mb-2 md:mb-0">
+            <i class="fas fa-route text-2xl text-primary mr-3"></i>
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Composio Tool Router</h1>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex space-x-4 text-sm md:text-base border-b border-gray-200 dark:border-gray-700 w-full md:w-auto md:border-b-0">
+            <a href="#" class="nav-link py-2 px-1 text-gray-600 dark:text-gray-300 hover:text-primary transition duration-150" data-view="dashboard">
+                <i class="fas fa-th-large mr-1"></i> Dashboard
+            </a>
+            <a href="#" class="nav-link py-2 px-1 text-gray-600 dark:text-gray-300 hover:text-primary transition duration-150" data-view="router">
+                <i class="fas fa-tools mr-1"></i> Tool Router
+            </a>
+            <a href="#" class="nav-link py-2 px-1 text-gray-600 dark:text-gray-300 hover:text-primary transition duration-150" data-view="decision">
+                <i class="fas fa-brain mr-1"></i> Decision Log
+            </a>
+            <a href="#" class="nav-link py-2 px-1 text-gray-600 dark:text-gray-300 hover:text-primary transition duration-150" data-view="simulation">
+                <i class="fas fa-cogs mr-1"></i> Simulation
+            </a>
+        </nav>
+        
+        <!-- New Controls: Status, Theme, AI Bot -->
+        <div class="flex items-center space-x-4 mt-3 md:mt-0 pt-2 md:pt-0 border-t border-gray-200 dark:border-gray-700 md:border-t-0 w-full md:w-auto justify-end">
+            <!-- Firestore Status Indicator -->
+            <div id="firestoreStatus" class="flex items-center space-x-2 text-sm">
+                <span class="font-medium text-gray-700 dark:text-gray-300">DB Status:</span>
+                <span id="statusCircle" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse" title="Connecting..."></span>
+                <span id="statusText" class="text-gray-600 dark:text-gray-400">Connecting...</span>
+            </div>
+
+            <!-- Dark Mode Toggle -->
+            <button id="themeToggle" class="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-200" title="Toggle Theme">
+                <i class="fas fa-sun text-lg dark:hidden"></i>
+                <i class="fas fa-moon text-lg hidden dark:inline"></i>
+            </button>
+            
+            <!-- AI Assistant Button (AI Boot) -->
+            <button id="aiBotToggle" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-xl shadow-md transition duration-200 text-sm">
+                <i class="fas fa-robot mr-1"></i> AI Boot
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area (Responsive Padding and Max Width) -->
+    <main class="p-4 md:p-8 mx-auto max-w-7xl w-full">
+        <div id="contentArea" class="bg-white dark:bg-gray-800 p-4 md:p-8 rounded-xl shadow-xl min-h-[70vh]">
+            <!-- Dynamic content will be injected here -->
+            <p class="text-center text-gray-500 dark:text-gray-400 pt-10">Loading view...</p>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- AI Assistant Panel (Sidebar) -->
+    <div id="aiBotPanel" class="fixed right-0 top-0 h-full w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200 dark:border-gray-700">
+        <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <h3 class="text-xl font-bold text-purple-600 dark:text-purple-400"><i class="fas fa-robot mr-2"></i> AI Assistant</h3>
+            <button id="closeAiBot" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Chat History -->
+        <div id="chatHistory" class="flex-grow p-4 overflow-y-auto space-y-4">
+            <div class="flex justify-start">
+                <div class="bg-purple-100 dark:bg-purple-900 text-gray-800 dark:text-gray-200 p-3 rounded-xl rounded-bl-sm max-w-[80%] shadow-sm">
+                    Hello! I'm your Composio Tool Router AI Assistant. Ask me anything about the dashboard metrics, decision logs, or how the tool router works!
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <form id="chatForm" class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex space-x-2">
+                <input type="text" id="chatInput" placeholder="Ask a question..." required
+                       class="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-purple-500 focus:border-purple-500 transition duration-150">
+                <button type="submit" id="chatSendButton" class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition duration-200 shadow-md">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
+
+        // --- Firebase Configuration ---
+
+        // User-provided Firebase Configuration (Hardcoded)
+        const userProvidedConfig = {
+            apiKey: "AIzaSyAp3q0xUaT5mjV4yNIWYSfeDBhqOmG7LiM",
+            authDomain: "toolrouter-d1321.firebaseapp.com",
+            projectId: "toolrouter-d1321",
+            storageBucket: "toolrouter-d1321.firebasestorage.app",
+            messagingSenderId: "453302598569",
+            appId: "1:453302598569:web:a5a922ebf2b4cc7cae62b8",
+            measurementId: "G-C2W38CVBD3"
+        };
+        
+        // Global Firebase instances and variables
+        let app, db, auth, userId;
+        
+        // Prioritize the environment-provided __app_id for Firestore paths, 
+        // falling back to the projectId from the config if __app_id is unavailable.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : userProvidedConfig.projectId;
+        const firebaseConfig = userProvidedConfig;
+
+        // Use environment-provided token for authentication.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // State variables
+        let currentView = 'dashboard';
+        let decisions = [];
+        let toolCalls = [];
+        
+        // Theme and Status State
+        let isDarkMode = false;
+        let firestoreStatus = 'connecting';
+        
+        const apiKey = "AIzaSyAKEDYBH1TJ91Swga_3hKk7ALO4lrwrqc8"; // API key for Gemini
+
+        // --- Utility Functions ---
+
+        /**
+         * Function to update the Firestore status indicator in the UI
+         * @param {'connecting'|'connected'|'error'} status 
+         */
+        function updateStatusIndicator(status) {
+            firestoreStatus = status;
+            const circle = document.getElementById('statusCircle');
+            const text = document.getElementById('statusText');
+
+            if (circle && text) {
+                // Reset classes
+                circle.classList.remove('bg-gray-400', 'bg-green-500', 'bg-red-500', 'animate-pulse');
+                text.classList.remove('text-gray-600', 'text-green-600', 'text-red-600');
+
+                if (status === 'connected') {
+                    circle.classList.add('bg-green-500');
+                    text.classList.add('text-green-600', 'dark:text-green-400');
+                    circle.title = 'Connected';
+                    text.textContent = 'Connected';
+                } else if (status === 'error') {
+                    circle.classList.add('bg-red-500');
+                    text.classList.add('text-red-600', 'dark:text-red-400');
+                    circle.title = 'Error';
+                    text.textContent = 'Error';
+                } else { // connecting
+                    circle.classList.add('bg-gray-400', 'animate-pulse');
+                    text.classList.add('text-gray-600', 'dark:text-gray-400');
+                    circle.title = 'Connecting...';
+                    text.textContent = 'Connecting...';
+                }
+            }
+        }
+
+        /**
+         * Toggles between light and dark mode.
+         */
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            const html = document.documentElement;
+            if (isDarkMode) {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        /**
+         * Applies the saved theme preference on load.
+         */
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                isDarkMode = true;
+                document.documentElement.classList.add('dark');
+            } else {
+                isDarkMode = false;
+            }
+        }
+
+        /**
+         * Toggles the AI bot panel sidebar.
+         */
+        function toggleAIBotPanel() {
+            const panel = document.getElementById('aiBotPanel');
+            panel.classList.toggle('translate-x-full');
+        }
+
+        /**
+         * Shows a transient toast notification.
+         * @param {string} message - The message to display.
+         * @param {'success'|'error'|'info'} type - The type of toast.
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colorMap = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+
+            const iconMap = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast p-4 rounded-lg shadow-xl text-white ${colorMap[type]} flex items-center`;
+            toast.innerHTML = `<i class="fas ${iconMap[type]} mr-3"></i> ${message}`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('hide');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        }
+
+        // --- Firebase Initialization and Auth ---
+
+        async function initializeFirebase() {
+            updateStatusIndicator('connecting');
+            try {
+                // setLogLevel('debug');
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign in with custom token or anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    showToast('Authenticated successfully.', 'success');
+                } else {
+                    await signInAnonymously(auth);
+                    showToast('Signed in anonymously.', 'info');
+                }
+
+                // Set up auth state listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("User ID:", userId);
+                        updateStatusIndicator('connected');
+                        setupFirestoreListeners();
+                        switchView(currentView);
+                    } else {
+                        userId = null;
+                        console.log("No user signed in.");
+                        updateStatusIndicator('error'); // Can set to error or 'anonymous'
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                updateStatusIndicator('error');
+                showToast(`Firebase Error: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Firestore Listeners ---
+
+        function setupFirestoreListeners() {
+            if (!db || !userId) return;
+
+            const baseCollectionPath = `/artifacts/${appId}/users/${userId}`;
+
+            // Listener for Tool Calls (Private data)
+            const toolCallQuery = query(collection(db, `${baseCollectionPath}/tool_calls`));
+            onSnapshot(toolCallQuery, (snapshot) => {
+                toolCalls = [];
+                snapshot.forEach(doc => {
+                    toolCalls.push({ id: doc.id, ...doc.data() });
+                });
+                toolCalls.sort((a, b) => b.timestamp - a.timestamp);
+                if (currentView === 'router') renderToolRouter();
+            }, (error) => {
+                console.error("Tool Call Snapshot Error:", error);
+                showToast("Failed to load tool call data.", 'error');
+            });
+
+            // Listener for Decisions (Private data)
+            const decisionQuery = query(collection(db, `${baseCollectionPath}/decisions`));
+            onSnapshot(decisionQuery, (snapshot) => {
+                decisions = [];
+                snapshot.forEach(doc => {
+                    decisions.push({ id: doc.id, ...doc.data() });
+                });
+                decisions.sort((a, b) => b.timestamp - a.timestamp);
+                if (currentView === 'decision') renderDecisionLog();
+            }, (error) => {
+                console.error("Decision Snapshot Error:", error);
+                showToast("Failed to load decision data.", 'error');
+            });
+        }
+
+
+        // --- AI Assistant Functions ---
+
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`; 
+
+        function renderMessage(sender, text) {
+            const historyDiv = document.getElementById('chatHistory');
+            const messageDiv = document.createElement('div');
+            
+            // Format text to display newlines correctly
+            const formattedText = text.replace(/\n/g, '<br>');
+
+            if (sender === 'user') {
+                messageDiv.className = 'flex justify-end';
+                messageDiv.innerHTML = `
+                    <div class="bg-blue-600 text-white p-3 rounded-xl rounded-br-sm max-w-[80%] shadow-md">
+                        ${formattedText}
+                    </div>
+                `;
+            } else {
+                messageDiv.className = 'flex justify-start';
+                messageDiv.innerHTML = `
+                    <div class="bg-purple-100 dark:bg-purple-900 text-gray-800 dark:text-gray-200 p-3 rounded-xl rounded-bl-sm max-w-[80%] shadow-sm">
+                        ${formattedText}
+                    </div>
+                `;
+            }
+            historyDiv.appendChild(messageDiv);
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+        }
+
+        async function callGeminiAPI(prompt) {
+            const chatHistoryDiv = document.getElementById('chatHistory');
+            const inputField = document.getElementById('chatInput');
+            const sendButton = document.getElementById('chatSendButton');
+
+            renderMessage('user', prompt);
+            inputField.value = '';
+            sendButton.disabled = true;
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.id = 'ai-loading';
+            loadingDiv.innerHTML = `
+                <div class="bg-purple-100 dark:bg-purple-900 text-gray-800 dark:text-gray-200 p-3 rounded-xl rounded-bl-sm max-w-[80%] shadow-sm">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Thinking...
+                </div>
+            `;
+            chatHistoryDiv.appendChild(loadingDiv);
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+
+            const systemPrompt = "You are a helpful AI assistant for the Composio Tool Router Dashboard. Provide concise and accurate answers based on the user's query. If the query is general knowledge, use the search tool for grounding. If the query is about the dashboard's current data (e.g., 'What is the current latency?'), state that you cannot access live data but can explain what the metric represents.";
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+            
+            const maxRetries = 5;
+            let responseText = "Sorry, I couldn't get a response from the AI assistant. Please try again later.";
+            
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                let delay = Math.pow(2, attempt) * 1000;
+                await new Promise(res => setTimeout(res, delay)); 
+
+                try {
+                    const response = await fetch(GEMINI_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) continue;
+
+                    if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        responseText = candidate.content.parts[0].text;
+                        break;
+                    }
+
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                }
+            }
+
+            loadingDiv.remove();
+            renderMessage('ai', responseText);
+            sendButton.disabled = false;
+        }
+
+        function handleChatSubmission(e) {
+            e.preventDefault();
+            const chatInput = document.getElementById('chatInput');
+            const prompt = chatInput.value.trim();
+
+            if (prompt) {
+                callGeminiAPI(prompt);
+            }
+        }
+
+
+        // --- View Rendering Functions ---
+
+        function switchView(viewId) {
+            currentView = viewId;
+            const contentArea = document.getElementById('contentArea');
+            
+            // Update active navigation link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.dataset.view === viewId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            contentArea.innerHTML = '';
+
+            switch (viewId) {
+                case 'dashboard':
+                    renderDashboard();
+                    break;
+                case 'router':
+                    renderToolRouter();
+                    break;
+                case 'decision':
+                    renderDecisionLog();
+                    break;
+                case 'simulation':
+                    renderSimulation();
+                    break;
+                default:
+                    contentArea.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 pt-10">View not found.</p>`;
+            }
+        }
+        
+        // --- Dashboard View (Responsive Grid) ---
+        function renderDashboard() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-6">System Dashboard</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Quick overview of AI router performance and data insights. <span class="text-sm text-primary break-all">User ID: ${userId || 'N/A'}</span></p>
+
+                <!-- Key Metrics (Responsive Grid) -->
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-10">
+                    ${renderMetricCard('Total Calls', toolCalls.length, 'fas fa-arrow-up', 'text-primary')}
+                    ${renderMetricCard('Successful Routes', toolCalls.filter(c => c.status === 'success').length, 'fas fa-check-circle', 'text-green-500')}
+                    ${renderMetricCard('Router Accuracy', '92.5%', 'fas fa-bullseye', 'text-secondary')}
+                    ${renderMetricCard('Avg Latency (ms)', '185ms', 'fas fa-clock', 'text-yellow-500')}
+                </div>
+                
+                <!-- Charts and Log (Responsive Grid) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-gray-50 dark:bg-gray-700 p-6 rounded-xl shadow-inner h-96">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Tool Call Volume (Last 7 Days)</h3>
+                        <canvas id="callVolumeChart"></canvas>
+                    </div>
+                    <div class="lg:col-span-1 bg-gray-50 dark:bg-gray-700 p-6 rounded-xl shadow-inner overflow-y-auto h-96">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Recent Decisions</h3>
+                        ${renderRecentDecisions()}
+                    </div>
+                </div>
+
+                <!-- Analysis Panel -->
+                <div class="mt-10 p-6 bg-primary/10 dark:bg-primary/20 rounded-xl shadow-md border-l-4 border-primary flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <p class="text-primary-800 dark:text-primary-200 font-medium mb-3 md:mb-0">
+                        Run a comprehensive AI analysis on the latest 100 tool calls.
+                    </p>
+                    <button id="runAIAnalysis" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 shadow-md">
+                        <i class="fas fa-magic mr-2"></i> Run AI Analysis
+                    </button>
+                </div>
+            `;
+            setTimeout(initializeChart, 0);
+        }
+
+        function renderMetricCard(title, value, icon, color) {
+            return `
+                <div class="bg-white dark:bg-gray-700 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full ${color} bg-opacity-10 dark:bg-opacity-20 mr-4">
+                            <i class="${icon} text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-300">${title}</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">${value}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRecentDecisions() {
+            if (decisions.length === 0) {
+                return '<p class="text-gray-500 dark:text-gray-400 italic">No decisions logged yet.</p>';
+            }
+            return decisions.slice(0, 5).map(d => `
+                <div class="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+                    <p class="font-medium text-gray-800 dark:text-gray-100 truncate">${d.prompt}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <span class="font-semibold">${d.tool}</span> | ${new Date(d.timestamp).toLocaleTimeString()}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        // --- Tool Router View (List/Table focus) ---
+        function renderToolRouter() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-6">Tool Router & Call Log</h2>
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <!-- Tool Call Form -->
+                    <form id="toolCallForm" class="p-6 bg-gray-100 dark:bg-gray-700 rounded-xl shadow-inner w-full md:w-1/2 lg:w-1/3">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">New Tool Call</h3>
+                        <div class="mb-4">
+                            <label for="promptInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User Prompt</label>
+                            <textarea id="promptInput" required rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg transition duration-200 shadow-md">
+                            <i class="fas fa-play mr-2"></i> Route & Call Tool
+                        </button>
+                    </form>
+                    
+                    <!-- Filters/Actions -->
+                    <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md w-full md:w-1/2 lg:w-2/3 flex flex-col justify-between">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Data Actions</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="statusFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150">
+                                    <option value="">All</option>
+                                    <option value="success">Success</option>
+                                    <option value="failure">Failure</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="toolFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Used</label>
+                                <select id="toolFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150">
+                                    <option value="">All Tools</option>
+                                    <option value="google:search">Google Search</option>
+                                    <option value="calendar:create">Calendar Create</option>
+                                    <option value="jira:update">Jira Update</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col justify-end">
+                                <button id="applyFilters" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 rounded-lg transition duration-200 shadow-md mb-2">
+                                    <i class="fas fa-filter mr-2"></i> Apply Filters
+                                </button>
+                                <button id="exportData" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition duration-200 shadow-md">
+                                    <i class="fas fa-download mr-2"></i> Export Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Call Log (Responsive Table) -->
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    ${renderToolCallTable(toolCalls)}
+                </div>
+            `;
+        }
+
+        function renderToolCallTable(calls) {
+            if (calls.length === 0) {
+                return '<p class="p-8 text-center text-gray-500 dark:text-gray-400 italic">No tool calls have been logged yet.</p>';
+            }
+
+            const header = (name, mobileHide = false) => `<th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ${mobileHide ? 'hidden lg:table-cell' : ''}">${name}</th>`;
+            
+            const rows = calls.map(call => {
+                const statusClass = call.status === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                                   call.status === 'failure' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                                   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+                
+                return `
+                    <tr class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 w-1/3">${call.tool}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs w-1/2">${call.prompt}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">${new Date(call.timestamp).toLocaleString()}</td>
+                        <td class="px-4 py-3 text-sm w-1/6">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                ${call.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            ${header('Tool')}
+                            ${header('Prompt')}
+                            ${header('Timestamp', true)}
+                            ${header('Status')}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // --- Decision Log View (Responsive Card List) ---
+        function renderDecisionLog() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-6">Decision Log</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Review the AI model's routing decisions (Prompt, Decision, Rationale).</p>
+                
+                <div id="decisionList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    ${decisions.length === 0 
+                        ? '<p class="col-span-full p-8 text-center text-gray-500 dark:text-gray-400 italic">No routing decisions have been logged yet.</p>' 
+                        : decisions.map(renderDecisionCard).join('')
+                    }
+                </div>
+            `;
+        }
+
+        function renderDecisionCard(decision) {
+            const timestamp = new Date(decision.timestamp).toLocaleString();
+            return `
+                <div class="bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 hover:shadow-xl transition duration-300 flex flex-col">
+                    <div class="p-5 border-b border-gray-100 dark:border-gray-600">
+                        <div class="text-xs font-semibold uppercase text-indigo-600 dark:text-indigo-400 mb-1">${decision.tool}</div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2 truncate" title="${decision.prompt}">${decision.prompt}</h3>
+                    </div>
+                    <div class="p-5 flex-grow">
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3">${decision.rationale || 'No rationale provided.'}</p>
+                    </div>
+                    <div class="p-5 pt-0 text-right text-xs text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-600">
+                        Logged: ${timestamp}
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // --- Simulation View (Responsive Form) ---
+        function renderSimulation() {
+            const contentArea = document.getElementById('contentArea');
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 mb-6">Router Simulation</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Test the router against a large batch of prompts to assess performance and robustness.</p>
+
+                <div class="max-w-3xl mx-auto bg-gray-100 dark:bg-gray-700 p-6 sm:p-8 rounded-xl shadow-inner">
+                    <form id="simulationForm">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-5">Simulation Parameters</h3>
+
+                        <div class="mb-5">
+                            <label for="promptCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Number of Prompts to Simulate (1-100)</label>
+                            <input type="number" id="promptCount" value="10" min="1" max="100" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150">
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="simulationSource" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prompt Source</label>
+                            <select id="simulationSource" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg shadow-sm focus:ring-primary focus:border-primary transition duration-150">
+                                <option value="sample">Use Sample Prompts</option>
+                                <option value="user_data">Use Recent Tool Call Prompts</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the source for the prompts used in the simulation batch.</p>
+                        </div>
+                        
+                        <div class="mb-5">
+                            <label for="mockLatency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mock Tool Latency (ms)</label>
+                            <input type="range" id="mockLatency" value="150" min="50" max="1000" oninput="document.getElementById('latencyValue').innerText = this.value + ' ms'"
+                                class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Simulated latency: <span id="latencyValue">150 ms</span></p>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg">
+                            <i class="fas fa-forward mr-2"></i> Start Simulation
+                        </button>
+                    </form>
+                </div>
+
+                <div id="simulationResults" class="mt-10 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hidden">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Simulation Results</h3>
+                    <div id="resultsContent"></div>
+                </div>
+            `;
+            document.getElementById('latencyValue').innerText = document.getElementById('mockLatency').value + ' ms';
+        }
+
+        // --- Chart Initialization ---
+
+        let callVolumeChart;
+        function initializeChart() {
+            if (callVolumeChart) callVolumeChart.destroy();
+            
+            const ctx = document.getElementById('callVolumeChart');
+            if (!ctx) return;
+
+            const data = {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Tool Calls',
+                        data: [15, 22, 18, 25, 30, 10, 5],
+                        borderColor: isDarkMode ? '#a78bfa' : '#3b82f6', // Violet-400 or Blue-500
+                        backgroundColor: isDarkMode ? 'rgba(167, 139, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                    },
+                ]
+            };
+
+            callVolumeChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }, ticks: { color: isDarkMode ? 'white' : 'black' } },
+                        x: { grid: { color: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }, ticks: { color: isDarkMode ? 'white' : 'black' } }
+                    }
+                }
+            });
+        }
+
+        // --- Event Handlers ---
+
+        async function routeAndCallTool(prompt) {
+            showToast('Routing prompt and calling tool...', 'info');
+
+            const mockTools = ['google:search', 'calendar:create', 'jira:update', 'slack:send_message'];
+            const randomTool = mockTools[Math.floor(Math.random() * mockTools.length)];
+            const status = Math.random() < 0.8 ? 'success' : 'failure';
+
+            const decisionData = {
+                prompt: prompt,
+                tool: randomTool,
+                rationale: `The model determined that ${randomTool} was the best fit because the prompt mentioned keywords related to its function.`,
+                timestamp: Date.now(),
+            };
+
+            const toolCallData = {
+                prompt: prompt,
+                tool: randomTool,
+                status: status,
+                result: status === 'success' ? `Successfully executed ${randomTool}.` : `Failed to execute ${randomTool} due to a mock error.`,
+                timestamp: Date.now(),
+            };
+
+            try {
+                const decisionRef = collection(db, `/artifacts/${appId}/users/${userId}/decisions`);
+                await addDoc(decisionRef, decisionData);
+
+                const callRef = collection(db, `/artifacts/${appId}/users/${userId}/tool_calls`);
+                await addDoc(callRef, toolCallData);
+
+                showToast(`Tool routed to ${randomTool}. Status: ${status}`, status === 'success' ? 'success' : 'error');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showToast(`Failed to log data: ${e.message}`, 'error');
+            }
+        }
+
+        function handleToolCallSubmission(e) {
+            e.preventDefault();
+            const promptInput = document.getElementById('promptInput');
+            const prompt = promptInput.value.trim();
+
+            if (prompt) {
+                routeAndCallTool(prompt);
+                promptInput.value = '';
+            } else {
+                showToast('Please enter a prompt.', 'error');
+            }
+        }
+
+        function handleDecisionSubmission(e) {
+            e.preventDefault();
+            showToast('Decision logged (Mock functionality).', 'info');
+        }
+
+        async function handleSimulationSubmission(e) {
+            e.preventDefault();
+            const promptCount = parseInt(document.getElementById('promptCount').value);
+            const mockLatency = parseInt(document.getElementById('mockLatency').value);
+            
+            if (isNaN(promptCount) || promptCount < 1 || promptCount > 100) {
+                showToast('Please enter a valid prompt count (1-100).', 'error');
+                return;
+            }
+
+            const simResultsDiv = document.getElementById('simulationResults');
+            const resultsContentDiv = document.getElementById('resultsContent');
+            simResultsDiv.classList.remove('hidden');
+            resultsContentDiv.innerHTML = '<p class="text-center text-primary dark:text-primary-400 font-medium"><i class="fas fa-spinner fa-spin mr-2"></i> Running simulation...</p>';
+            
+            const startSimTime = performance.now();
+            let successCount = 0;
+            let failureCount = 0;
+
+            const samplePrompts = [
+                "Schedule a meeting with the team next Tuesday morning.",
+                "Find the best way to travel from London to Paris by train.",
+                "Update the Jira ticket 'Project X Bug' with the status 'In Progress'.",
+                "Send a Slack message to the #engineering channel about the new deployment.",
+                "What is the capital of Australia?",
+                "Draft an email to finance about my expense report.",
+                "Create a new document for Q4 planning.",
+                "Check the weather forecast for San Francisco tomorrow.",
+                "Log a high-priority bug in Jira for the payment gateway.",
+                "Who won the last F1 race?",
+            ];
+            
+            let promptsToRun = [];
+            for (let i = 0; i < promptCount; i++) {
+                promptsToRun.push(samplePrompts[i % samplePrompts.length]);
+            }
+
+            const mockToolExecution = (prompt) => new Promise(resolve => {
+                const toolResult = Math.random() < 0.85 ? 'success' : 'failure';
+                setTimeout(() => resolve(toolResult), mockLatency * (0.8 + Math.random() * 0.4));
+            });
+
+            const results = await Promise.all(promptsToRun.map(prompt => mockToolExecution(prompt)));
+
+            results.forEach(result => {
+                if (result === 'success') successCount++;
+                else failureCount++;
+            });
+
+            const endSimTime = performance.now();
+            const totalSimTime = (endSimTime - startSimTime).toFixed(2);
+            const avgLatency = (totalSimTime / promptCount).toFixed(2);
+            const accuracy = ((successCount / promptCount) * 100).toFixed(1);
+
+            resultsContentDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${renderMetricCard('Total Prompts', promptCount, 'fas fa-list-ol', 'text-primary')}
+                    ${renderMetricCard('Total Time (ms)', totalSimTime, 'fas fa-hourglass-half', 'text-gray-500')}
+                    ${renderMetricCard('Success Rate', `${accuracy}%`, 'fas fa-award', 'text-green-500')}
+                    ${renderMetricCard('Avg Latency (ms)', avgLatency, 'fas fa-gauge-high', 'text-secondary')}
+                </div>
+                <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg border-l-4 border-yellow-400 dark:border-yellow-700">
+                    <p class="text-yellow-800 dark:text-yellow-200 font-medium">The simulation ran ${promptCount} prompts. Successes: ${successCount}, Failures: ${failureCount}.</p>
+                </div>
+            `;
+            showToast(`Simulation complete in ${totalSimTime} ms.`, 'success');
+        }
+
+        function runAIAnalysis() {
+            showToast('Running comprehensive AI analysis (Mock).', 'info');
+        }
+
+        function applyFilters() {
+            const status = document.getElementById('statusFilter')?.value;
+            const tool = document.getElementById('toolFilter')?.value;
+            showToast(`Applying mock filters: Status=${status || 'All'}, Tool=${tool || 'All'}`, 'info');
+        }
+
+        function exportData() {
+            showToast('Exporting data to CSV (Mock).', 'info');
+        }
+
+
+        // --- Initialization ---
+
+        window.onload = function () {
+            initializeTheme(); // Must apply theme class before initializing anything that uses colors
+            initializeFirebase();
+            
+            // Event Listeners
+            document.getElementById('contentArea').addEventListener('submit', (e) => {
+                if (e.target.id === 'toolCallForm') handleToolCallSubmission(e);
+                else if (e.target.id === 'decisionForm') handleDecisionSubmission(e);
+                else if (e.target.id === 'simulationForm') handleSimulationSubmission(e);
+            });
+
+            document.getElementById('contentArea').addEventListener('click', (e) => {
+                if (e.target.id === 'runAIAnalysis') runAIAnalysis();
+                else if (e.target.id === 'applyFilters') applyFilters();
+                else if (e.target.id === 'exportData') exportData();
+            });
+
+            // Navigation Event Listener
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const viewId = e.currentTarget.dataset.view;
+                    switchView(viewId);
+                });
+            });
+            
+            // New Listeners for Theme and AI Bot
+            document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('aiBotToggle').addEventListener('click', toggleAIBotPanel);
+            document.getElementById('closeAiBot').addEventListener('click', toggleAIBotPanel);
+            document.getElementById('chatForm').addEventListener('submit', handleChatSubmission);
+
+            // Initial view switch (called after auth setup in initializeFirebase)
+            switchView(currentView);
+        }
+
+    </script>
+</body>
+</html>

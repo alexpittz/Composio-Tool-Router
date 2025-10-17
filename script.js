@@ -61,7 +61,13 @@ function initializeTheme() {
 
 function toggleAIBotPanel() {
     const panel = document.getElementById('aiBotPanel');
-    panel.classList.toggle('translate-x-full');
+    const isOpen = panel.classList.contains('open');
+    
+    if (isOpen) {
+        panel.classList.remove('open');
+    } else {
+        panel.classList.add('open');
+    }
 }
 
 function showToast(message, type = 'info') {
@@ -735,8 +741,12 @@ window.onload = function () {
         });
     });
 
-    document.getElementById('aiBotToggle').addEventListener('click', toggleAIBotPanel);
-    document.getElementById('closeAiBot').addEventListener('click', toggleAIBotPanel);
+    const aiBotWidget = document.getElementById('aiBotWidget');
+    const closeAiBot = document.getElementById('closeAiBot');
+    
+    if (aiBotWidget) aiBotWidget.addEventListener('click', toggleAIBotPanel);
+    if (closeAiBot) closeAiBot.addEventListener('click', toggleAIBotPanel);
+    
     document.getElementById('chatForm').addEventListener('submit', handleChatSubmission);
 
     const teamButtons = [document.getElementById('teamButtonHeader')];

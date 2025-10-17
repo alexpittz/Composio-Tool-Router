@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Composio Tool Router Dashboard</title>
+    <title>LuminaTech Tool Router Telemetry Hub (Composio Integrated)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,25 +26,25 @@
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
 
     <div id="particles-js"></div>
-    
+
     <div class="scan-lines"></div>
     <div class="floating-grid"></div>
-    
+
     <div class="radar-scanner radar-1"></div>
     <div class="radar-scanner radar-2"></div>
     <div class="radar-scanner radar-3"></div>
-    
+
     <div class="floating-robots">
         <div class="robot-icon robot-1">🤖</div>
         <div class="robot-icon robot-2">🤖</div>
         <div class="robot-icon robot-3">🤖</div>
         <div class="robot-icon robot-4">🤖</div>
     </div>
-    
+
     <div class="sparkle-container" id="sparkleContainer"></div>
-    
+
     <div id="dataStreams"></div>
-    
+
     <div class="glowing-orbs">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -52,12 +52,14 @@
         <div class="orb orb-4"></div>
     </div>
 
+    <div class="floating-particles" id="floatingParticles"></div>
+
     <header class="bg-white dark:bg-gray-800 shadow-md px-4 py-3 md:px-8 flex flex-col md:flex-row justify-between items-center sticky top-0 z-20 transition-colors duration-300">
         <div class="flex items-center mb-2 md:mb-0">
             <div class="logo-container">
                 <img src="logo.png" alt="Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-route text-2xl\' style=\'color: white;\'></i>'">
             </div>
-            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 ml-3">Composio Tool Router</h1>
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 ml-3">LuminaTech Tool Router Telemetry Hub(Composio Integrated)</h1>
         </div>
 
         <nav class="flex space-x-4 text-sm md:text-base border-b border-gray-200 dark:border-gray-700 w-full md:w-auto md:border-b-0">
@@ -86,10 +88,6 @@
                 <i class="fas fa-users"></i>
                 <span>Our Team</span>
             </button>
-
-            <button id="aiBotToggle" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-xl shadow-md transition duration-200 text-sm">
-                <i class="fas fa-robot mr-1"></i> AI Bot
-            </button>
         </div>
     </header>
 
@@ -101,26 +99,31 @@
 
     <div id="toastContainer"></div>
 
-    <div id="aiBotPanel" class="fixed right-0 top-0 h-full w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200 dark:border-gray-700">
-        <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <h3 class="text-xl font-bold text-purple-600 dark:text-purple-400"><i class="fas fa-robot mr-2"></i> AI Assistant</h3>
-            <button id="closeAiBot" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition">
-                <i class="fas fa-times text-xl"></i>
+    <button id="aiBotWidget" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-full shadow-2xl z-50 flex items-center justify-center transform transition-all duration-300 hover:scale-110">
+        <div class="pulse-ring"></div>
+        <img src="logo.png" alt="AI Bot" class="w-10 h-10 rounded-full" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-robot text-white text-2xl\'></i>'">
+    </button>
+
+    <div id="aiBotPanel" class="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] h-[500px] max-h-[70vh] bg-white dark:bg-gray-800 shadow-2xl z-50 transform scale-0 origin-bottom-right transition-transform duration-300 flex flex-col rounded-2xl border-2 border-purple-500 opacity-0">
+        <div class="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-600 to-pink-600 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-white"><i class="fas fa-robot mr-2"></i> AI Assistant</h3>
+            <button id="closeAiBot" class="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
         <div id="chatHistory" class="flex-grow p-4 overflow-y-auto space-y-4">
             <div class="flex justify-start">
                 <div class="bg-purple-100 dark:bg-purple-900 text-gray-800 dark:text-gray-200 p-3 rounded-xl rounded-bl-sm max-w-[80%] shadow-sm">
-                    Hello! I'm your Composio Tool Router AI Assistant. Ask me anything about the dashboard metrics, decision logs, or how the tool router works!
+                    Hello! I'm your LuminaTech Tool Router AI Assistant. Ask me anything about the dashboard metrics, decision logs, or how the tool router works!
                 </div>
             </div>
         </div>
 
-        <form id="chatForm" class="p-4 border-t border-gray-200 dark:border-gray-700">
+        <form id="chatForm" class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl">
             <div class="flex space-x-2">
                 <input type="text" id="chatInput" placeholder="Ask a question..." required
-                       class="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-purple-500 focus:border-purple-500 transition duration-150">
+                       class="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-purple-500 focus:border-purple-500 transition duration-150 text-sm">
                 <button type="submit" id="chatSendButton" class="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-xl transition duration-200 shadow-md">
                     <i class="fas fa-paper-plane"></i>
                 </button>
@@ -132,7 +135,7 @@
         <div class="banner-spotlight spotlight-1"></div>
         <div class="banner-spotlight spotlight-2"></div>
         <div class="banner-spotlight spotlight-3"></div>
-        
+
         <div class="team-banner-content">
             <h2 class="team-banner-title">Meet Our Team</h2>
             <img src="team.jpg" alt="Our Team">
@@ -174,7 +177,7 @@
                 container.appendChild(sparkle);
             }
         }
-        
+
         function createDataStreams() {
             const container = document.getElementById('dataStreams');
             for (let i = 0; i < 15; i++) {
@@ -187,10 +190,30 @@
                 container.appendChild(stream);
             }
         }
-        
+
         createSparkles();
         createDataStreams();
         
+        function createFloatingParticles() {
+            const container = document.getElementById('floatingParticles');
+            const colors = ['#00d4ff', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#06b6d4'];
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                particle.style.setProperty('--x', (Math.random() * 400 - 200) + 'px');
+                particle.style.setProperty('--y', (Math.random() * 400 - 200) + 'px');
+                container.appendChild(particle);
+            }
+        }
+        
+        createFloatingParticles();
+
         document.getElementById('closeBanner').addEventListener('click', () => {
             document.getElementById('teamBanner').classList.add('hidden');
         });
